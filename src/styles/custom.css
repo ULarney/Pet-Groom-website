@@ -1,0 +1,161 @@
+/* Bluey-inspired hover effects and animations */
+
+/* Button hover effects with glow */
+.btn-primary,
+button[class*="bg-blue"] {
+  transition: all 0.3s ease;
+  position: relative;
+}
+
+.btn-primary:hover,
+button[class*="bg-blue"]:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 16px rgba(91, 155, 213, 0.3);
+}
+
+.btn-primary:active,
+button[class*="bg-blue"]:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+/* Orange/Secondary button hover */
+button[class*="bg-orange"],
+button[class*="bg-green"] {
+  transition: all 0.3s ease;
+}
+
+button[class*="bg-orange"]:hover:not(:disabled),
+button[class*="bg-green"]:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 16px rgba(255, 157, 92, 0.3);
+}
+
+/* Card hover effects */
+.card,
+[class*="rounded-lg"][class*="shadow"] {
+  transition: all 0.3s ease;
+}
+
+.card:hover,
+[class*="rounded-lg"][class*="shadow"]:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 24px rgba(91, 155, 213, 0.15);
+}
+
+/* Link hover with underline animation */
+a[class*="text-blue"],
+a[class*="nav-link"] {
+  position: relative;
+  transition: color 0.3s ease;
+}
+
+a[class*="text-blue"]::after,
+a[class*="nav-link"]::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  width: 0;
+  height: 2px;
+  background: currentColor;
+  transition: width 0.3s ease;
+}
+
+a[class*="text-blue"]:hover::after,
+a[class*="nav-link"]:hover::after {
+  width: 100%;
+}
+
+/* Input focus glow */
+input:focus,
+select:focus,
+textarea:focus {
+  box-shadow: 0 0 0 3px rgba(91, 155, 213, 0.1);
+  border-color: var(--bluey-primary);
+}
+
+/* Gradient text effect for headings */
+.gradient-text {
+  background: linear-gradient(135deg, var(--bluey-primary) 0%, var(--bingo-orange) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Paw print decoration */
+.paw-decoration {
+  position: relative;
+}
+
+.paw-decoration::before {
+  content: '🐾';
+  position: absolute;
+  opacity: 0.1;
+  font-size: 3rem;
+  right: -1rem;
+  top: -1rem;
+  animation: float 3s ease-in-out infinite;
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+/* Pulse animation for important elements */
+.pulse-glow {
+  animation: pulse-glow 2s ease-in-out infinite;
+}
+
+@keyframes pulse-glow {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(91, 155, 213, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 0 10px rgba(91, 155, 213, 0);
+  }
+}
+
+/* Shimmer effect for loading states */
+.shimmer {
+  background: linear-gradient(
+    90deg,
+    rgba(91, 155, 213, 0.1) 0%,
+    rgba(255, 157, 92, 0.2) 50%,
+    rgba(91, 155, 213, 0.1) 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 2s ease-in-out infinite;
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+/* Playful bounce on page elements */
+.bounce-in {
+  animation: bounce-in 0.6s ease-out;
+}
+
+@keyframes bounce-in {
+  0% {
+    transform: scale(0.9);
+    opacity: 0;
+  }
+  50% {
+    transform: scale(1.05);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}

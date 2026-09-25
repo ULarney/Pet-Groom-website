@@ -1,0 +1,146 @@
+import { createClient } from '@supabase/supabase-js';
+import dotenv from 'dotenv';
+dotenv.config();
+
+const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || 'https://poejtslzbtogchavlvys.supabase.co';
+const supabaseKey = process.env.SUPABASE_SERVICE_KEY || process.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBvZWp0c2x6YnRvZ2NoYXZsdnlzIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4OTkzMDU5OSwiZXhwIjoyMTA1NTA2NTk5fQ.thGZ0QE4_OjOFQUSzourDsMp8RlIdJXQNQDlNIkF5oE';
+
+export const supabase = createClient(supabaseUrl, supabaseKey);
+
+export async function seedProductsIfEmpty() {
+  try {
+    const { data: existing, error } = await supabase.from('products').select('id').limit(1);
+    if (error) {
+      console.warn('Could not query products table (make sure SQL schema was executed in Supabase):', error.message);
+      return;
+    }
+    if (existing && existing.length > 0) {
+      return; // Already seeded
+    }
+
+    console.log('Products table empty in Supabase. Seeding catalog...');
+    const initialProducts = [
+      {
+        name: 'Premium Dog Shampoo',
+        price: 349.99,
+        stock: 15,
+        image: 'https://images.unsplash.com/photo-1601758228041-f3b2795255f1?w=600',
+        description: "Our premium dog shampoo is specially formulated with natural ingredients to provide gentle yet effective cleaning for all coat types. Enriched with aloe vera and vitamin E to moisturize and protect your dog's skin and coat."
+      },
+      {
+        name: 'Cat Grooming Kit',
+        price: 499.99,
+        stock: 8,
+        image: 'https://images.unsplash.com/photo-1591088398332-8a7791972843?w=600',
+        description: 'Complete grooming set designed specifically for cats. Includes a slicker brush, nail clippers, grooming comb, and mat remover. Everything you need to keep your feline friend looking their best.'
+      },
+      {
+        name: 'Pet Nail Clippers',
+        price: 189.99,
+        stock: 25,
+        image: 'https://images.unsplash.com/photo-1583511655857-d19b40a7a54e?w=600',
+        description: 'Professional-grade nail clippers with safety guard to prevent over-cutting. Ergonomic design with non-slip grip for comfortable and safe nail trimming. Suitable for dogs and cats of all sizes.'
+      },
+      {
+        name: 'Dog Brush Set',
+        price: 289.99,
+        stock: 12,
+        image: 'https://images.unsplash.com/photo-1623387641168-d9803ddd3f35?w=600',
+        description: 'Set of 3 professional brushes for different coat types. Includes a slicker brush for tangles, a pin brush for long coats, and a bristle brush for short coats.'
+      },
+      {
+        name: 'Pet Conditioner',
+        price: 329.99,
+        stock: 10,
+        image: 'https://images.unsplash.com/photo-1600804931749-2da4ce26c869?w=600',
+        description: "Moisturizing conditioner that leaves your pet's coat silky smooth. Natural ingredients help detangle and add shine while protecting against dryness."
+      },
+      {
+        name: 'Flea & Tick Collar',
+        price: 429.99,
+        stock: 0,
+        image: 'https://images.unsplash.com/photo-1548199973-03cce0bbc87b?w=600',
+        description: 'Long-lasting 8-month protection against fleas and ticks. Water-resistant and adjustable for a comfortable fit.'
+      },
+      {
+        name: 'Pet Dental Kit',
+        price: 249.99,
+        stock: 18,
+        image: 'https://images.unsplash.com/photo-1606214174585-fe31582dc6ee?w=600',
+        description: 'Complete dental care kit with enzymatic toothpaste and dual-sided toothbrush. Helps prevent plaque and tartar buildup for healthier teeth and gums.'
+      },
+      {
+        name: 'Ear Cleaning Solution',
+        price: 219.99,
+        stock: 20,
+        image: 'https://images.unsplash.com/photo-1600804889194-e2f8c6012c0d?w=600',
+        description: 'Gentle veterinary-formulated ear cleaning solution. Safely removes dirt, wax, and debris while preventing odor and infections.'
+      },
+      {
+        name: 'Waterless Pet Shampoo',
+        price: 179.99,
+        stock: 22,
+        image: 'https://images.unsplash.com/photo-1583337130417-3346a1be7dee?w=600',
+        description: 'No-rinse waterless shampoo perfect for quick clean-ups between baths. Neutralises odour and leaves your pet\'s coat fresh and clean in minutes. Ideal for anxious pets that dislike water.'
+      },
+      {
+        name: 'Deshedding Grooming Glove',
+        price: 159.99,
+        stock: 30,
+        image: 'https://images.unsplash.com/photo-1548767797-d8c844163c4a?w=600',
+        description: 'Silicone grooming glove with 255 gentle massage nodules that remove loose hair, dander, and dirt. Works on both wet and dry coats. Your pet will love the relaxing massage sensation.'
+      },
+      {
+        name: 'Pet Cologne & Deodorant Spray',
+        price: 139.99,
+        stock: 35,
+        image: 'https://images.unsplash.com/photo-1585559604959-cb7aa7b4c944?w=600',
+        description: 'Long-lasting, alcohol-free pet cologne spray in a fresh lavender and chamomile scent. Safe for daily use on dogs and cats. Leaves coat smelling clean and feeling conditioned between washes.'
+      },
+      {
+        name: 'Adjustable Grooming Table',
+        price: 2499.99,
+        stock: 4,
+        image: 'https://images.unsplash.com/photo-1601758174114-e711c0cbaa69?w=600',
+        description: 'Professional foldable grooming table with height-adjustable legs and non-slip rubber surface. Includes a grooming arm and loop. Ideal for home grooming sessions. Supports pets up to 80 kg.'
+      },
+      {
+        name: 'Organic Paw Balm',
+        price: 119.99,
+        stock: 40,
+        image: 'https://images.unsplash.com/photo-1601758003122-53c40e686a19?w=600',
+        description: 'All-natural paw balm made with shea butter, beeswax, and coconut oil. Soothes dry, cracked, and chapped paw pads. Provides a protective barrier against hot pavements and rough surfaces. Lick-safe formula.'
+      },
+      {
+        name: 'Pet Hair Dryer & Blower',
+        price: 899.99,
+        stock: 6,
+        image: 'https://images.unsplash.com/photo-1587300003388-59208cc962cb?w=600',
+        description: 'Variable-speed, low-noise pet hair dryer with 3 heat settings. Reduces drying time by 70% compared to towel drying. Comes with 4 interchangeable nozzle attachments for different coat types.'
+      },
+      {
+        name: 'Anti-Tick & Flea Shampoo',
+        price: 269.99,
+        stock: 16,
+        image: 'https://images.unsplash.com/photo-1587300003388-59208cc962cb?w=600',
+        description: 'Medicated shampoo with active pyrethrin formula that kills fleas, ticks, and lice on contact. Gentle enough for weekly use. Leaves coat shiny and deodorised. Suitable for dogs over 12 weeks.'
+      },
+      {
+        name: 'Stainless Steel Grooming Scissors Set',
+        price: 549.99,
+        stock: 9,
+        image: 'https://images.unsplash.com/photo-1590698933947-a202b069a861?w=600',
+        description: 'Professional 5-piece stainless steel scissor set including straight, curved, thinning, chunker, and finishing scissors. Razor-sharp blades with ergonomic offset handles reduce hand fatigue during long grooming sessions.'
+      }
+    ];
+
+    const { error: insertError } = await supabase.from('products').insert(initialProducts);
+    if (insertError) {
+      console.error('Failed to seed initial products into Supabase:', insertError.message);
+    } else {
+      console.log('Successfully seeded 16 products into Supabase!');
+    }
+  } catch (err) {
+    console.error('Error seeding products:', err);
+  }
+}
