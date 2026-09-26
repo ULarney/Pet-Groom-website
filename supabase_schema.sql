@@ -1,9 +1,3 @@
--- ============================================================
--- Pet & Groom – Complete Supabase Schema
--- Run this entire file in Supabase → SQL Editor → New Query
--- It is safe to re-run (uses IF NOT EXISTS + DROP IF EXISTS)
--- ============================================================
-
 -- ──────────────────────────────────────────────────────────────
 -- 1. PRODUCTS
 -- ──────────────────────────────────────────────────────────────
@@ -150,8 +144,3 @@ DROP POLICY IF EXISTS "Users Manage Own Orders" ON public.orders;
 CREATE POLICY "Users Manage Own Orders"
   ON public.orders FOR ALL USING (auth.uid() = user_id);
 
--- ──────────────────────────────────────────────────────────────
--- Done!  All 5 tables are now created and secured.
--- The Express backend (service-role key) bypasses RLS automatically,
--- so it can read/write any row without needing special policies.
--- ──────────────────────────────────────────────────────────────
