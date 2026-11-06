@@ -1,6 +1,5 @@
-## Running the code
+# Pet & Groom
 
-Run `npm install` to install the dependencies.
+React + Vite frontend, Express API on Vercel Functions, Supabase Auth and database.
 
-Run `npm.cmd run dev` to start the development server.
-
+Local: copy `.env.example` to `.env`, fill credentials, `npm install`, then `npm run dev`.

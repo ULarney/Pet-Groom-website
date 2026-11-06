@@ -1,5 +1,4 @@
 import express from 'express';
-import cors from 'cors';
 import dotenv from 'dotenv';
 import { supabase, seedProductsIfEmpty } from './db.js';
 
@@ -8,32 +7,50 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 5001;
 
-app.use(cors());
 app.use(express.json());
 
 // Seed catalog on startup if table is ready & empty
-seedProductsIfEmpty();
+if (process.env.SEED_PRODUCTS_ON_START === 'true') seedProductsIfEmpty();
 
-// Optional auth middleware for endpoints that supply Bearer token
+// Verify identity before any private or mutating operation. The service-role
+// Supabase client bypasses RLS, so API authorization is mandatory.
 async function authenticateUser(req, res, next) {
-  const authHeader = req.headers.authorization;
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    return next();
-  }
-
-  const token = authHeader.split(' ')[1];
+  const authHeader = req.headers.authorization || '';
+  if (!authHeader.startsWith('Bearer ')) return res.status(401).json({ error: 'Please sign in first.' });
   try {
-    const { data: { user }, error } = await supabase.auth.getUser(token);
-    if (!error && user) {
-      req.user = user;
-    }
+    const { data, error } = await supabase.auth.getUser(authHeader.slice(7));
+    if (error || !data?.user) return res.status(401).json({ error: 'Your session has expired. Please sign in again.' });
+    req.user = data.user;
+    next();
   } catch (err) {
-    console.warn('Auth token verification error:', err.message);
+    console.error('Authentication failed:', err);
+    res.status(401).json({ error: 'Could not verify your session.' });
   }
+}
+async function requireAdmin(req, res, next) {
+  const { data, error } = await supabase.from('profiles').select('role').eq('id', req.user.id).single();
+  if (error || data?.role !== 'admin') return res.status(403).json({ error: 'Administrator access required.' });
   next();
 }
-
-app.use(authenticateUser);
+function ownUser(req, res, next) {
+  const supplied = req.body?.userId || req.query?.userId;
+  if (supplied && supplied !== req.user.id) return res.status(403).json({ error: 'You cannot access another account.' });
+  next();
+}
+async function ownPet(req, res, next) {
+  const { data, error } = await supabase.from('pets').select('user_id').eq('id', req.params.id).maybeSingle();
+  if (error) return res.status(500).json({ error: 'Could not verify pet ownership.' });
+  if (!data) return res.status(404).json({ error: 'Pet not found.' });
+  if (data.user_id !== req.user.id) return res.status(403).json({ error: 'Access denied.' });
+  next();
+}
+async function ownBooking(req, res, next) {
+  const { data, error } = await supabase.from('bookings').select('user_id').eq('id', req.params.id).maybeSingle();
+  if (error) return res.status(500).json({ error: 'Could not verify booking ownership.' });
+  if (!data) return res.status(404).json({ error: 'Booking not found.' });
+  if (data.user_id !== req.user.id) return res.status(403).json({ error: 'Access denied.' });
+  next();
+}
 
 // API Status
 app.get('/api/status', (req, res) => {
@@ -148,7 +165,7 @@ app.get('/api/products/:id', async (req, res) => {
 });
 
 // Add new product (Admin)
-app.post('/api/products', async (req, res) => {
+app.post('/api/products', authenticateUser, requireAdmin, async (req, res) => {
   const { name, price, stock, image, description } = req.body;
   if (!name || price === undefined || stock === undefined) {
     return res.status(400).json({ error: 'Name, price, and stock are required' });
@@ -176,7 +193,7 @@ app.post('/api/products', async (req, res) => {
 });
 
 // Edit product (Admin)
-app.put('/api/products/:id', async (req, res) => {
+app.put('/api/products/:id', authenticateUser, requireAdmin, async (req, res) => {
   const { name, price, stock, image, description } = req.body;
   if (!name || price === undefined || stock === undefined) {
     return res.status(400).json({ error: 'Name, price, and stock are required' });
@@ -205,7 +222,7 @@ app.put('/api/products/:id', async (req, res) => {
 });
 
 // Delete product (Admin)
-app.delete('/api/products/:id', async (req, res) => {
+app.delete('/api/products/:id', authenticateUser, requireAdmin, async (req, res) => {
   try {
     const { error } = await supabase
       .from('products')
@@ -225,8 +242,8 @@ app.delete('/api/products/:id', async (req, res) => {
 // ==========================================
 
 // Get user's pets
-app.get('/api/pets', async (req, res) => {
-  const userId = req.query.userId || req.user?.id;
+app.get('/api/pets', authenticateUser, ownUser, async (req, res) => {
+  const userId = req.user.id;
   if (!userId) {
     return res.status(400).json({ error: 'userId is required' });
   }
@@ -247,7 +264,7 @@ app.get('/api/pets', async (req, res) => {
 });
 
 // Get single pet
-app.get('/api/pets/:id', async (req, res) => {
+app.get('/api/pets/:id', authenticateUser, ownPet, async (req, res) => {
   try {
     const { data, error } = await supabase
       .from('pets')
@@ -266,8 +283,8 @@ app.get('/api/pets/:id', async (req, res) => {
 });
 
 // Add new pet
-app.post('/api/pets', async (req, res) => {
-  const userId = req.body.userId || req.user?.id;
+app.post('/api/pets', authenticateUser, ownUser, async (req, res) => {
+  const userId = req.user.id;
   const { name, type, breed, age, ageUnit, notes } = req.body;
 
   if (!userId || !name) {
@@ -298,7 +315,7 @@ app.post('/api/pets', async (req, res) => {
 });
 
 // Edit pet
-app.put('/api/pets/:id', async (req, res) => {
+app.put('/api/pets/:id', authenticateUser, ownPet, async (req, res) => {
   const { name, type, breed, age, ageUnit, notes } = req.body;
   if (!name) {
     return res.status(400).json({ error: 'Name is required' });
@@ -328,7 +345,7 @@ app.put('/api/pets/:id', async (req, res) => {
 });
 
 // Delete pet
-app.delete('/api/pets/:id', async (req, res) => {
+app.delete('/api/pets/:id', authenticateUser, ownPet, async (req, res) => {
   try {
     const { error } = await supabase
       .from('pets')
@@ -348,8 +365,8 @@ app.delete('/api/pets/:id', async (req, res) => {
 // ==========================================
 
 // Get bookings
-app.get('/api/bookings', async (req, res) => {
-  const userId = req.query.userId || req.user?.id;
+app.get('/api/bookings', authenticateUser, ownUser, async (req, res) => {
+  const userId = req.user.id;
 
   try {
     let query = supabase
@@ -381,8 +398,8 @@ app.get('/api/bookings', async (req, res) => {
 });
 
 // Add booking
-app.post('/api/bookings', async (req, res) => {
-  const userId = req.body.userId || req.user?.id;
+app.post('/api/bookings', authenticateUser, ownUser, async (req, res) => {
+  const userId = req.user.id;
   const { petId, service, date, time, notes } = req.body;
 
   if (!userId || !petId || !service || !date || !time) {
@@ -390,6 +407,8 @@ app.post('/api/bookings', async (req, res) => {
   }
 
   try {
+    const { data: pet, error: petErr } = await supabase.from('pets').select('user_id').eq('id', petId).maybeSingle();
+    if (petErr || !pet || pet.user_id !== req.user.id) return res.status(403).json({ error: 'Invalid pet for this account.' });
     const { data: newBooking, error: insertErr } = await supabase
       .from('bookings')
       .insert([{
@@ -422,7 +441,7 @@ app.post('/api/bookings', async (req, res) => {
 });
 
 // Cancel/delete booking
-app.delete('/api/bookings/:id', async (req, res) => {
+app.delete('/api/bookings/:id', authenticateUser, ownBooking, async (req, res) => {
   try {
     const { error } = await supabase
       .from('bookings')
@@ -442,8 +461,8 @@ app.delete('/api/bookings/:id', async (req, res) => {
 // ==========================================
 
 // Get user's orders
-app.get('/api/orders', async (req, res) => {
-  const userId = req.query.userId || req.user?.id;
+app.get('/api/orders', authenticateUser, ownUser, async (req, res) => {
+  const userId = req.user.id;
 
   try {
     let query = supabase.from('orders').select('*').order('created_at', { ascending: false });
@@ -462,8 +481,8 @@ app.get('/api/orders', async (req, res) => {
 });
 
 // Create new order
-app.post('/api/orders', async (req, res) => {
-  const userId = req.body.userId || req.user?.id;
+app.post('/api/orders', authenticateUser, ownUser, async (req, res) => {
+  const userId = req.user.id;
   const { items, total, instructions } = req.body;
 
   if (!userId || !items || !Array.isArray(items) || items.length === 0 || total === undefined) {
@@ -508,7 +527,10 @@ app.post('/api/orders', async (req, res) => {
   }
 });
 
-// Start Express App
-app.listen(PORT, () => {
-  console.log(`Server running on http://localhost:${PORT} (Supabase Backend)`);
-});
+// Vercel imports the Express app as a serverless handler.
+export default app;
+
+// Keep the existing local `npm run dev` workflow unchanged.
+if (process.env.VERCEL !== '1' && process.env.NODE_ENV !== 'test') {
+  app.listen(PORT, () => console.log(`API listening on http://localhost:${PORT}`));
+}
