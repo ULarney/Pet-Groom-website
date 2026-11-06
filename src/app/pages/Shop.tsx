@@ -7,8 +7,6 @@ import { api } from '../utils/api';
 
 export default function Shop() {
   const [products, setProducts] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [loadError, setLoadError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [sortBy, setSortBy] = useState('name');
   const [toast, setToast] = useState<string | null>(null);
@@ -24,14 +22,9 @@ export default function Shop() {
     async function loadProducts() {
       try {
         const data = await api.products.getAll();
-        if (!Array.isArray(data)) throw new Error('The product API returned an unexpected response.');
         setProducts(data);
-        setLoadError(null);
       } catch (err) {
         console.error('Error fetching products:', err);
-        setLoadError(err instanceof Error ? err.message : 'Unable to load products.');
-      } finally {
-        setLoading(false);
       }
     }
     loadProducts();
@@ -61,7 +54,7 @@ export default function Shop() {
   const filteredProducts = products
     .filter(product =>
       product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (product.description || '').toLowerCase().includes(searchTerm.toLowerCase())
+      product.description.toLowerCase().includes(searchTerm.toLowerCase())
     )
     .sort((a, b) => {
       if (sortBy === 'name') return a.name.localeCompare(b.name);
@@ -108,17 +101,6 @@ export default function Shop() {
           </select>
         </div>
 
-        {loading && <p role="status" className="text-center text-gray-600 mb-6">Loading products…</p>}
-        {loadError && (
-          <div role="alert" className="mb-6 rounded-lg border border-red-200 bg-red-50 p-4 text-red-800">
-            <p className="font-semibold">Products could not be loaded.</p>
-            <p className="text-sm mt-1">{loadError}</p>
-            <button type="button" className="mt-3 underline font-medium" onClick={() => window.location.reload()}>Try again</button>
-          </div>
-        )}
-        {!loading && !loadError && filteredProducts.length === 0 && (
-          <p className="text-center text-gray-600 mb-6">No products match your search.</p>
-        )}
         {/* Products Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           {filteredProducts.map(product => (

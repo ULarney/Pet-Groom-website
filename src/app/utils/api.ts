@@ -1,10 +1,9 @@
 import axios from 'axios';
 import { supabase } from '../lib/supabase';
 
-// Vite proxies /api locally; Vercel serves /api using its serverless function.
-const backendOrigin = (import.meta.env.VITE_API_BASE_URL || '').trim().replace(/\/+$/, '');
+// Create axios instance pointing at our Express backend
 const axiosInstance = axios.create({
-  baseURL: backendOrigin || '/',
+  baseURL: '/',
   headers: { 'Content-Type': 'application/json' },
 });
 
@@ -26,11 +25,6 @@ async function request<T = any>(promise: Promise<any>): Promise<T> {
     const message =
       err.response?.data?.error ||
       err.response?.data?.message ||
-      (err.response?.status === 404 && !backendOrigin
-        ? 'API endpoint not found. Configure VITE_API_BASE_URL with your deployed backend URL in Vercel.'
-        : undefined) ||
-      (err.response?.status === 401 ? 'Your session has expired. Please sign in again.' : undefined) ||
-      (err.code === 'ERR_NETWORK' ? 'Unable to reach the backend. Check VITE_API_BASE_URL, backend availability, HTTPS and CORS.' : undefined) ||
       err.message ||
       'Request failed';
     throw new Error(message);
